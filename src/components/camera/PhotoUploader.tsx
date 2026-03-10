@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Camera, X, Plus, Check } from "lucide-react";
+import { Camera, X, Plus, Check } from "lucide-react";
 import type { CapturedPhoto } from "@/lib/types";
 import { fileToDataUrl, compressImage } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -118,54 +118,26 @@ export default function PhotoUploader({
           ))}
         </AnimatePresence>
 
-        {/* Add Photo Slots */}
+        {/* Camera button slot */}
         {canAddMore && (
-          <>
-            {/* Camera option */}
-            <motion.button
-              layout
-              onClick={onOpenCamera}
-              className={cn(
-                "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all",
-                "border-terracotta/40 bg-terracotta/5 hover:border-terracotta hover:bg-terracotta/10"
-              )}
-            >
-              <Camera className="w-6 h-6 text-terracotta" />
-              <span className="text-xs font-body text-terracotta font-medium">
-                Camera
-              </span>
-            </motion.button>
-
-            {/* Upload drop zone (only show if there's space for another) */}
-            {photos.length < maxPhotos - 1 && (
-              <div
-                {...getRootProps()}
-                className={cn(
-                  "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all cursor-pointer",
-                  isDragActive
-                    ? "border-terracotta bg-terracotta/10"
-                    : "border-charcoal/20 bg-charcoal/5 hover:border-charcoal/40"
-                )}
-              >
-                <input {...getInputProps()} />
-                {isProcessing ? (
-                  <div className="w-6 h-6 border-2 border-terracotta border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Upload className="w-6 h-6 text-charcoal/40" />
-                    <span className="text-xs font-body text-charcoal/40 text-center leading-tight px-1">
-                      Upload
-                    </span>
-                  </>
-                )}
-              </div>
+          <motion.button
+            layout
+            onClick={onOpenCamera}
+            className={cn(
+              "aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-all",
+              "border-terracotta/40 bg-terracotta/5 hover:border-terracotta hover:bg-terracotta/10"
             )}
-          </>
+          >
+            <Camera className="w-6 h-6 text-terracotta" />
+            <span className="text-xs font-body text-terracotta font-medium">
+              Camera
+            </span>
+          </motion.button>
         )}
       </div>
 
-      {/* Drop zone for bulk upload */}
-      {photos.length === 0 && (
+      {/* Drop zone for upload — visible until full */}
+      {canAddMore && (
         <div
           {...getRootProps()}
           className={cn(
@@ -177,17 +149,23 @@ export default function PhotoUploader({
         >
           <input {...getInputProps()} />
           <div className="flex flex-col items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-cream-300 flex items-center justify-center">
-              <Plus className="w-6 h-6 text-charcoal/60" />
-            </div>
-            <div>
-              <p className="text-sm font-body font-medium text-charcoal/70">
-                {isDragActive ? "Drop photos here" : "Drag and drop photos"}
-              </p>
-              <p className="text-xs font-body text-charcoal/40 mt-1">
-                Or use the Camera and Upload buttons above
-              </p>
-            </div>
+            {isProcessing ? (
+              <div className="w-8 h-8 border-2 border-terracotta border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <div className="w-12 h-12 rounded-full bg-white border border-charcoal/10 flex items-center justify-center">
+                  <Plus className="w-6 h-6 text-charcoal/60" />
+                </div>
+                <div>
+                  <p className="text-sm font-body font-medium text-charcoal/70">
+                    {isDragActive ? "Drop photos here" : photos.length === 0 ? "Tap to upload photos" : "Add another photo"}
+                  </p>
+                  <p className="text-xs font-body text-charcoal/40 mt-1">
+                    JPG, PNG, WEBP or HEIC · up to {maxPhotos - photos.length} more
+                  </p>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

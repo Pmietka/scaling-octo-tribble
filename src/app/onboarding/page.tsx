@@ -106,7 +106,7 @@ export default function OnboardingPage() {
   };
 
   const canProceed = () => {
-    if (step === 1) return data.photos.length >= 2;
+    if (step === 1) return data.photos.length >= 1;
     if (step === 2) return data.textDescription.length > 0 || data.hairType !== "";
     return true;
   };
@@ -227,8 +227,8 @@ export default function OnboardingPage() {
                   Add your photos
                 </h1>
                 <p className="font-body text-sm text-charcoal/60 leading-relaxed">
-                  We need at least 2 photos for the best results. Try to include
-                  a front view and a side profile.
+                  Add at least one photo to get started. For the best results,
+                  include a front view and a side profile.
                 </p>
               </div>
 
@@ -239,7 +239,7 @@ export default function OnboardingPage() {
                 onOpenCamera={() => setShowCamera(true)}
               />
 
-              {data.photos.length >= 2 && (
+              {data.photos.length >= 1 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -248,10 +248,10 @@ export default function OnboardingPage() {
                   <Check className="w-5 h-5 text-sage-700 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-body font-medium text-sage-700">
-                      Great! You have enough photos
+                      {data.photos.length >= 2 ? "Great! You have enough photos" : "Photo added — add a side profile for best results"}
                     </p>
                     <p className="text-xs font-body text-charcoal/60 mt-0.5">
-                      Add up to {5 - data.photos.length} more for even better analysis
+                      {data.photos.length < 5 ? `Add up to ${5 - data.photos.length} more for even better analysis` : "Maximum photos reached"}
                     </p>
                   </div>
                 </motion.div>
@@ -501,7 +501,7 @@ export default function OnboardingPage() {
 
           {step === 1 && data.photos.length === 0 && (
             <p className="text-center text-xs font-body text-charcoal/40 mt-3">
-              Add at least 2 photos to continue
+              Add at least 1 photo to continue
             </p>
           )}
         </div>
