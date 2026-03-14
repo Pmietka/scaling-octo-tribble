@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Plus, Edit, Trash2, Upload, Shield } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Edit, Trash2, Upload, Shield, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import type { Product } from "@/lib/types";
+import type { Product, ProductCategory } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 
 const ADMIN_EMAILS = ["admin@stylesense.app"];
@@ -197,6 +197,7 @@ export default function AdminProductsPage() {
 
         {/* Products table */}
         {isLoading ? (
+
           <div className="text-center py-12">
             <div className="w-8 h-8 border-2 border-terracotta border-t-transparent rounded-full animate-spin mx-auto" />
           </div>
@@ -273,6 +274,352 @@ export default function AdminProductsPage() {
           </div>
         )}
       </div>
+
+      {/* Product form modal */}
+      <AnimatePresence>
+        {showForm && (
+          <ProductFormModal
+            product={editProduct}
+            onClose={() => { setShowForm(false); setEditProduct(null); }}
+            onSaved={loadProducts}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ============================================================
+// Product Form Modal
+// ============================================================
+
+const EMPTY_FORM = {
+  name: "",
+  brand: "",
+  category: "shampoo" as ProductCategory,
+  subcategory: "",
+  description: "",
+  image_url: "",
+  affiliate_url: "",
+  affiliate_network: "Amazon Associates",
+  price: "",
+  rating: "4.5",
+  hair_types: "",
+  concerns: "",
+  key_ingredients: "",
+  is_active: true,
+};
+
+function ProductFormModal({
+  product,
+  onClose,
+  onSaved,
+}: {
+  product: Product | null;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const [form, setForm] = useState(() =>
+    product
+      ? {
+          ...EMPTY_FORM,
+          name: product.name,
+          brand: product.brand,
+          category: product.category,
+          subcategory: product.subcategory || "",
+          description: product.description,
+          image_url: product.image_url,
+          affiliate_url: product.affiliate_url,
+          affiliate_network: product.affiliate_network,
+          price: String(product.price),
+          rating: String(product.rating),
+          hair_types: product.hair_types.join(", "),
+          concerns: product.concerns.join(", "),
+          key_ingredients: product.key_ingredients.join(", "),
+          is_active: product.is_active,
+        }
+      : EMPTY_FORM
+  );
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const set = (key: string, value: string | boolean) =>
+    setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSaving(true);
+    setError("");
+
+    const payload = {
+      name: form.name,
+      brand: form.brand,
+      category: form.category,
+      subcategory: form.subcategory || null,
+      description: form.description,
+      image_url: form.image_url,
+      affiliate_url: form.affiliate_url,
+      affiliate_network: form.affiliate_network,
+      price: parseFloat(form.price) || 0,
+      rating: Math.min(5, Math.max(0, parseFloat(form.rating) || 0)),
+      hair_types: form.hair_types
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      concerns: form.concerns
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      key_ingredients: form.key_ingredients
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      is_active: form.is_active,
+    };
+
+    const { error: dbError } = product
+      ? await supabase.from("products").update(payload).eq("id", product.id)
+      : await supabase.from("products").insert(payload);
+
+    if (dbError) {
+      setError(dbError.message);
+      setIsSaving(false);
+      return;
+    }
+
+    await onSaved();
+    onClose();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal/40 backdrop-blur-sm"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between p-4 border-b border-charcoal/10">
+          <h2 className="font-display text-lg text-charcoal">
+            {product ? "Edit Product" : "Add Product"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full bg-cream flex items-center justify-center"
+          >
+            <X className="w-4 h-4 text-charcoal/60" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSave} className="p-4 space-y-3">
+          {/* Row: name + brand */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Product name *">
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => set("name", e.target.value)}
+                required
+                className="input-field text-sm"
+                placeholder="Product name"
+              />
+            </Field>
+            <Field label="Brand *">
+              <input
+                type="text"
+                value={form.brand}
+                onChange={(e) => set("brand", e.target.value)}
+                required
+                className="input-field text-sm"
+                placeholder="Brand"
+              />
+            </Field>
+          </div>
+
+          {/* Row: category + subcategory */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Category *">
+              <select
+                value={form.category}
+                onChange={(e) => set("category", e.target.value)}
+                className="input-field text-sm"
+              >
+                {["shampoo", "conditioner", "styling", "treatment", "tool"].map(
+                  (c) => (
+                    <option key={c} value={c} className="capitalize">
+                      {c}
+                    </option>
+                  )
+                )}
+              </select>
+            </Field>
+            <Field label="Subcategory">
+              <input
+                type="text"
+                value={form.subcategory}
+                onChange={(e) => set("subcategory", e.target.value)}
+                className="input-field text-sm"
+                placeholder="e.g. moisturizing"
+              />
+            </Field>
+          </div>
+
+          <Field label="Description">
+            <textarea
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
+              rows={2}
+              className="textarea-field text-sm"
+              placeholder="Short product description"
+            />
+          </Field>
+
+          <Field label="Image URL">
+            <input
+              type="url"
+              value={form.image_url}
+              onChange={(e) => set("image_url", e.target.value)}
+              className="input-field text-sm"
+              placeholder="https://..."
+            />
+          </Field>
+
+          <Field label="Affiliate URL *">
+            <input
+              type="url"
+              value={form.affiliate_url}
+              onChange={(e) => set("affiliate_url", e.target.value)}
+              required
+              className="input-field text-sm"
+              placeholder="https://amzn.to/..."
+            />
+          </Field>
+
+          {/* Row: network + price + rating */}
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Network">
+              <input
+                type="text"
+                value={form.affiliate_network}
+                onChange={(e) => set("affiliate_network", e.target.value)}
+                className="input-field text-sm"
+              />
+            </Field>
+            <Field label="Price ($)">
+              <input
+                type="number"
+                value={form.price}
+                onChange={(e) => set("price", e.target.value)}
+                step="0.01"
+                min="0"
+                className="input-field text-sm"
+                placeholder="0.00"
+              />
+            </Field>
+            <Field label="Rating (0–5)">
+              <input
+                type="number"
+                value={form.rating}
+                onChange={(e) => set("rating", e.target.value)}
+                step="0.1"
+                min="0"
+                max="5"
+                className="input-field text-sm"
+                placeholder="4.5"
+              />
+            </Field>
+          </div>
+
+          <Field label="Hair types (comma-separated)">
+            <input
+              type="text"
+              value={form.hair_types}
+              onChange={(e) => set("hair_types", e.target.value)}
+              className="input-field text-sm"
+              placeholder="straight, wavy, curly, coily, all"
+            />
+          </Field>
+
+          <Field label="Concerns (comma-separated)">
+            <input
+              type="text"
+              value={form.concerns}
+              onChange={(e) => set("concerns", e.target.value)}
+              className="input-field text-sm"
+              placeholder="dryness, frizz, damage, thinning..."
+            />
+          </Field>
+
+          <Field label="Key ingredients (comma-separated)">
+            <input
+              type="text"
+              value={form.key_ingredients}
+              onChange={(e) => set("key_ingredients", e.target.value)}
+              className="input-field text-sm"
+              placeholder="argan oil, keratin, biotin..."
+            />
+          </Field>
+
+          <div className="flex items-center gap-2">
+            <input
+              id="is_active"
+              type="checkbox"
+              checked={form.is_active}
+              onChange={(e) => set("is_active", e.target.checked)}
+              className="w-4 h-4 accent-terracotta"
+            />
+            <label htmlFor="is_active" className="text-sm font-body text-charcoal">
+              Active (visible to users)
+            </label>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-sm font-body text-red-600">{error}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 btn-secondary"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="flex-1 btn-primary disabled:opacity-50"
+            >
+              {isSaving ? "Saving..." : product ? "Save Changes" : "Add Product"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="block text-xs font-body font-medium text-charcoal/70">
+        {label}
+      </label>
+      {children}
     </div>
   );
 }

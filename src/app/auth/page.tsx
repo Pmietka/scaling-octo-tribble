@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff } from "lucide-react";
-import { signInWithEmail, signUpWithEmail, signInWithGoogle } from "@/lib/supabase";
+import { supabase, signInWithEmail, signInWithGoogle } from "@/lib/supabase";
 
 function AuthForm() {
   const router = useRouter();
@@ -31,9 +31,24 @@ function AuthForm() {
         if (error) throw error;
         router.push("/profile");
       } else {
-        const { error } = await signUpWithEmail(email, password);
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: name || undefined } },
+        });
         if (error) throw error;
-        setSuccess("Check your email to confirm your account.");
+        // If email confirmation is disabled, update profile immediately
+        if (data.user && !data.user.identities?.length) {
+          setSuccess("Check your email to confirm your account.");
+        } else if (data.user && name) {
+          await supabase
+            .from("profiles")
+            .update({ display_name: name })
+            .eq("id", data.user.id);
+          setSuccess("Account created! Check your email to confirm.");
+        } else {
+          setSuccess("Check your email to confirm your account.");
+        }
       }
     } catch (err) {
       setError(
