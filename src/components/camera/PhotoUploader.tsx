@@ -7,6 +7,25 @@ import type { CapturedPhoto } from "@/lib/types";
 import { fileToDataUrl, compressImage } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
+function isHeic(file: File): boolean {
+  const name = file.name.toLowerCase();
+  return (
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif")
+  );
+}
+
+async function convertHeicToJpeg(file: File): Promise<File> {
+  const heic2any = (await import("heic2any")).default;
+  const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.92 });
+  const resultBlob = Array.isArray(blob) ? blob[0] : blob;
+  return new File([resultBlob], file.name.replace(/\.hei[cf]$/i, ".jpg"), {
+    type: "image/jpeg",
+  });
+}
+
 interface PhotoUploaderProps {
   photos: CapturedPhoto[];
   onAddPhoto: (photo: CapturedPhoto) => void;
@@ -48,7 +67,10 @@ export default function PhotoUploader({
         const fileArray = Array.from(files).slice(0, remaining);
 
         for (let i = 0; i < fileArray.length; i++) {
-          const file = fileArray[i];
+          let file = fileArray[i];
+          if (isHeic(file)) {
+            file = await convertHeicToJpeg(file);
+          }
           const dataUrl = await fileToDataUrl(file);
           const compressed = await compressImage(dataUrl, 1024, 0.85);
 
@@ -85,7 +107,7 @@ export default function PhotoUploader({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/heic"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
         multiple
         onChange={handleFileChange}
         className="hidden"
