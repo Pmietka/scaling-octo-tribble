@@ -8,6 +8,26 @@ export interface FaceAnalysis {
   notable_features: string[];
 }
 
+// 4-Principle Facial Feature Analysis (replaces generic face shape)
+export type ThirdsBalance = "small_upper" | "large_upper" | "balanced";
+export type SymmetryLevel = "highly_symmetrical" | "moderately_symmetrical" | "asymmetrical";
+export type VerticalLength = "long" | "short" | "balanced";
+export type JawProjection = "angular_projected" | "soft_rounded" | "moderate";
+
+export interface FacialPrincipleAssessment<T extends string> {
+  rating: T;
+  observation: string;
+  style_implication: string;
+}
+
+export interface FacialFeatureAnalysis {
+  facial_thirds: FacialPrincipleAssessment<ThirdsBalance>;
+  symmetry: FacialPrincipleAssessment<SymmetryLevel>;
+  vertical_length: FacialPrincipleAssessment<VerticalLength>;
+  jaw_projection: FacialPrincipleAssessment<JawProjection>;
+  overall_confidence: number;
+}
+
 export interface HairAnalysis {
   type: string;
   texture: string;
@@ -20,6 +40,7 @@ export interface StyleRecommendation {
   style_name: string;
   description: string;
   why_it_works: string;
+  principle_references?: string[];
   maintenance_level: "low" | "medium" | "high";
   barber_instructions: string;
   search_keywords: string[];
@@ -34,7 +55,8 @@ export interface ProductRecommendation {
 }
 
 export interface AnalysisResult {
-  face_analysis: FaceAnalysis;
+  face_analysis?: FaceAnalysis; // legacy field, kept for backward compat with old records
+  facial_feature_analysis?: FacialFeatureAnalysis; // new 4-principle analysis
   hair_analysis: HairAnalysis;
   recommendations: StyleRecommendation[];
   product_recommendations: ProductRecommendation[];

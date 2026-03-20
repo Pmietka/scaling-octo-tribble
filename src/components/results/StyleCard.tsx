@@ -72,6 +72,18 @@ export default function StyleCard({
           <p className="font-body text-sm text-charcoal/70 leading-snug">
             {recommendation.why_it_works}
           </p>
+          {recommendation.principle_references && recommendation.principle_references.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {recommendation.principle_references.map((ref) => (
+                <span
+                  key={ref}
+                  className="text-[10px] px-1.5 py-0.5 bg-sage/20 rounded-full text-sage-700 capitalize"
+                >
+                  {ref.replace(/_/g, " ")}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Search keywords */}

@@ -59,14 +59,14 @@ const GenericSilhouette = () => (
 
 const GUIDANCE_TEXT: Record<CapturedPhoto["angle"], string[]> = {
   front: [
-    "Face the camera directly",
-    "Keep your head level",
-    "Ensure your full face is visible",
+    "Face the camera directly — full face visible",
+    "Good lighting, no shadows on your face",
+    "Needed to assess facial thirds & symmetry",
   ],
   side: [
     "Turn 90 degrees to one side",
-    "Show your full profile",
-    "Keep hair away from face",
+    "Keep chin level — show full jaw profile",
+    "Critical for jaw projection assessment",
   ],
   back: [
     "Turn completely away from camera",
@@ -74,9 +74,9 @@ const GUIDANCE_TEXT: Record<CapturedPhoto["angle"], string[]> = {
     "Let hair fall naturally",
   ],
   other: [
-    "Take any additional angle",
-    "Consider a 3/4 view",
-    "Show your hair texture",
+    "3/4 angle works great as a third photo",
+    "High quality & well lit for best results",
+    "Shows hair texture and facial structure",
   ],
 };
 
