@@ -216,15 +216,12 @@ export async function analyzeHair(
     : SYSTEM_PROMPT;
   const userMessage = buildUserMessage(photos, textDescription, onboardingData);
 
-  const stream = await client.messages.stream({
-    model: "claude-opus-4-6",
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-6",
     max_tokens: 4096,
-    thinking: { type: "adaptive" },
     system: systemPrompt,
     messages: [userMessage],
   });
-
-  const response = await stream.finalMessage();
 
   // Extract text content
   const textBlock = response.content.find((b) => b.type === "text");

@@ -135,6 +135,18 @@ export default function OnboardingPage() {
         }),
       });
 
+      if (!response.ok) {
+        const text = await response.text();
+        let message = "Analysis failed";
+        try {
+          const err = JSON.parse(text);
+          message = err.error || message;
+        } catch {
+          message = response.status === 504 ? "Analysis timed out — try with fewer photos" : `Server error (${response.status})`;
+        }
+        throw new Error(message);
+      }
+
       const result = await response.json();
 
       if (!result.success) {
