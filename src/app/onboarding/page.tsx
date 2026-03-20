@@ -227,8 +227,7 @@ export default function OnboardingPage() {
                   Add your photos
                 </h1>
                 <p className="font-body text-sm text-charcoal/60 leading-relaxed">
-                  Add at least one photo to get started. For the best results,
-                  include a front view and a side profile.
+                  Upload 3 high-quality photos for the most accurate analysis: a front view, a side profile, and a 3/4 angle. Good lighting is essential.
                 </p>
               </div>
 
@@ -248,10 +247,10 @@ export default function OnboardingPage() {
                   <Check className="w-5 h-5 text-sage-700 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-body font-medium text-sage-700">
-                      {data.photos.length >= 2 ? "Great! You have enough photos" : "Photo added — add a side profile for best results"}
+                      {data.photos.length >= 3 ? "Perfect! 3 photos give the best analysis" : data.photos.length === 2 ? "Add a 3/4 angle for optimal results" : "Photo added — add a side profile next"}
                     </p>
                     <p className="text-xs font-body text-charcoal/60 mt-0.5">
-                      {data.photos.length < 5 ? `Add up to ${5 - data.photos.length} more for even better analysis` : "Maximum photos reached"}
+                      {data.photos.length < 3 ? `Add ${3 - data.photos.length} more photo${3 - data.photos.length > 1 ? "s" : ""} for the best facial feature analysis` : data.photos.length < 5 ? `You can add ${5 - data.photos.length} more if you like` : "Maximum photos reached"}
                     </p>
                   </div>
                 </motion.div>
