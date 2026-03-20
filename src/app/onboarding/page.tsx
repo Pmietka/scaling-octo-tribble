@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { AnimatePresence as AP } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import type {
   OnboardingData,

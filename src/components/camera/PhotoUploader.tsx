@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { useDropzone } from "react-dropzone";
+import { useCallback, useState, useRef, type ChangeEvent } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, X, Plus, Check } from "lucide-react";
 import type { CapturedPhoto } from "@/lib/types";
@@ -31,6 +30,7 @@ export default function PhotoUploader({
   maxPhotos = 5,
 }: PhotoUploaderProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const canAddMore = photos.length < maxPhotos;
 
   const assignAngle = (index: number): CapturedPhoto["angle"] => {
@@ -38,17 +38,17 @@ export default function PhotoUploader({
     return angles[index] || "other";
   };
 
-  const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
+  const processFiles = useCallback(
+    async (files: FileList | File[]) => {
       if (!canAddMore) return;
       setIsProcessing(true);
 
       try {
         const remaining = maxPhotos - photos.length;
-        const filesToProcess = acceptedFiles.slice(0, remaining);
+        const fileArray = Array.from(files).slice(0, remaining);
 
-        for (let i = 0; i < filesToProcess.length; i++) {
-          const file = filesToProcess[i];
+        for (let i = 0; i < fileArray.length; i++) {
+          const file = fileArray[i];
           const dataUrl = await fileToDataUrl(file);
           const compressed = await compressImage(dataUrl, 1024, 0.85);
 
@@ -59,6 +59,8 @@ export default function PhotoUploader({
             file,
           });
         }
+      } catch (err) {
+        console.error("Failed to process photo:", err);
       } finally {
         setIsProcessing(false);
       }
@@ -66,15 +68,29 @@ export default function PhotoUploader({
     [canAddMore, maxPhotos, photos.length, onAddPhoto]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { "image/*": [".jpg", ".jpeg", ".png", ".webp", ".heic"] },
-    disabled: !canAddMore || isProcessing,
-    multiple: true,
-  });
+  const handleFileChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      processFiles(files);
+      // Reset so the same file can be re-selected
+      e.target.value = "";
+    },
+    [processFiles]
+  );
 
   return (
     <div className="space-y-4">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic"
+        multiple
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* Photo Grid */}
       <div className="grid grid-cols-3 gap-3">
         <AnimatePresence mode="popLayout">
@@ -136,18 +152,12 @@ export default function PhotoUploader({
         )}
       </div>
 
-      {/* Drop zone for upload — visible until full */}
+      {/* Upload zone */}
       {canAddMore && (
         <div
-          {...getRootProps()}
-          className={cn(
-            "border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer",
-            isDragActive
-              ? "border-terracotta bg-terracotta/5"
-              : "border-charcoal/20 hover:border-charcoal/40"
-          )}
+          onClick={() => fileInputRef.current?.click()}
+          className="border-2 border-dashed rounded-2xl p-8 text-center transition-all cursor-pointer border-charcoal/20 hover:border-charcoal/40"
         >
-          <input {...getInputProps()} />
           <div className="flex flex-col items-center gap-3">
             {isProcessing ? (
               <div className="w-8 h-8 border-2 border-terracotta border-t-transparent rounded-full animate-spin" />
@@ -158,7 +168,7 @@ export default function PhotoUploader({
                 </div>
                 <div>
                   <p className="text-sm font-body font-medium text-charcoal/70">
-                    {isDragActive ? "Drop photos here" : photos.length === 0 ? "Tap to upload photos" : "Add another photo"}
+                    {photos.length === 0 ? "Tap to upload photos" : "Add another photo"}
                   </p>
                   <p className="text-xs font-body text-charcoal/40 mt-1">
                     JPG, PNG, WEBP or HEIC · up to {maxPhotos - photos.length} more
